@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+asyncpg
+pydantic-settings
+pyjwt[crypto]
+google-auth
+requests
+httpx
+google-genai
+rembg
+onnxruntime
+pillow
+pillow-heif
+python-multipart
