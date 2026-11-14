@@ -1,0 +1,69 @@
+# Продакшен на VPS. Все переменные берутся из файла .env рядом с этим файлом (см. .env.example).
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stylist
+      POSTGRES_USER: stylist
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro  # применяется только на пустом томе
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stylist -d stylist"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://stylist:${POSTGRES_PASSWORD}@db:5432/stylist
+      UPLOAD_DIR: /data/uploads
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]
+    volumes:
+      - uploads:/data/uploads
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: https://${API_DOMAIN:?set API_DOMAIN}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID}
+        NEXT_PUBLIC_APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+    restart: unless-stopped
+    environment:
+      API_URL_INTERNAL: http://api:8000
+    expose:
+      - "3000"
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+      WEB_DOMAIN: ${WEB_DOMAIN:?set WEB_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - api
+      - web
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:

@@ -1,0 +1,33 @@
+# Локальная разработка: docker compose up --build
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: stylist
+      POSTGRES_USER: stylist
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stylist}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro  # применяется только на пустом томе
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stylist -d stylist"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://stylist:${POSTGRES_PASSWORD:-stylist}@db:5432/stylist
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:
