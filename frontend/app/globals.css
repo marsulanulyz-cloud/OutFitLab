@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas: 249 248 246;   /* #F9F8F6 */
+  --card: 255 255 255;     /* #FFFFFF */
+  --ink: 26 26 26;         /* #1A1A1A */
+  --muted: 115 115 115;
+  --accent: 91 70 246;     /* #5B46F6 */
+}
+.dark {
+  --canvas: 18 18 18;      /* #121212 */
+  --card: 28 28 30;
+  --ink: 242 242 242;
+  --muted: 160 160 160;
+  --accent: 91 70 246;
+}
+
+html { -webkit-tap-highlight-color: transparent; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+
+@layer components {
+  .card { @apply rounded-3xl bg-card shadow-soft dark:border dark:border-white/5 dark:shadow-none; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100; }
+  .btn-accent { @apply btn bg-accent text-white shadow-lift; }
+  .btn-ghost { @apply btn bg-card text-ink shadow-soft dark:border dark:border-white/10 dark:shadow-none; }
+  /* «подиум» для вещей без фона */
+  .podium { background: radial-gradient(ellipse at 50% 92%, rgb(var(--ink) / 0.07), transparent 62%); }
+}
